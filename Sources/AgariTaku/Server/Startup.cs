@@ -1,4 +1,5 @@
 using AgariTaku.Server.Hubs;
+using AgariTaku.Server.State;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +22,8 @@ namespace AgariTaku.Server
             services.AddSignalR().AddMessagePackProtocol();
             services.AddControllersWithViews();
             services.AddRazorPages();
+
+            services.AddSingleton<GameStateManager>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
