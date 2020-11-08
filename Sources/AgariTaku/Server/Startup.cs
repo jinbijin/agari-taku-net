@@ -1,3 +1,4 @@
+using AgariTaku.Server.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -46,7 +47,7 @@ namespace AgariTaku.Server
             {
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
-                // Add hubs here...
+                endpoints.MapHub<GameHub>("/gamehub");
                 endpoints.MapFallbackToFile("index.html");
             });
         }
