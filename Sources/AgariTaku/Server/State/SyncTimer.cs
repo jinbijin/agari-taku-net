@@ -4,6 +4,7 @@ using AgariTaku.Shared.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace AgariTaku.Server.State
 {
@@ -23,18 +24,18 @@ namespace AgariTaku.Server.State
         public void StartSync()
         {
             _tickNumber = -Constants.SYNC_TICK_COUNT;
-            _timer.Elapsed += (x, y) => HandleTick();
+            _timer.Elapsed += async (x, y) => await HandleTick();
             _timer.Start();
         }
 
-        public void HandleTick()
+        public async Task HandleTick()
         {
-            _recipients.ServerSyncTick(new() { TickNumber = _tickNumber });
             _tickNumber++;
             if (_tickNumber >= 0)
             {
                 _timer.Stop();
             }
+            await _recipients.ServerSyncTick(new() { TickNumber = _tickNumber - 1 });
         }
     }
 }
