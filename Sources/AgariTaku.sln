@@ -3,11 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30626.31
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgariTaku.Server", "AgariTaku\Server\AgariTaku.Server.csproj", "{D61F8D27-54C3-49AE-BF02-F6FB32F93995}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgariTaku.Server", "AgariTaku\Server\AgariTaku.Server.csproj", "{D61F8D27-54C3-49AE-BF02-F6FB32F93995}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgariTaku.Client", "AgariTaku\Client\AgariTaku.Client.csproj", "{F3F6BD55-1F2C-4FE8-823B-1E7C1B96CDF8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgariTaku.Client", "AgariTaku\Client\AgariTaku.Client.csproj", "{F3F6BD55-1F2C-4FE8-823B-1E7C1B96CDF8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgariTaku.Shared", "AgariTaku\Shared\AgariTaku.Shared.csproj", "{EB61EC03-A324-434B-9016-311D4F2BBA48}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgariTaku.Shared", "AgariTaku\Shared\AgariTaku.Shared.csproj", "{EB61EC03-A324-434B-9016-311D4F2BBA48}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{881D8EBA-4864-4767-A0B8-9588EA17E9B2}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
