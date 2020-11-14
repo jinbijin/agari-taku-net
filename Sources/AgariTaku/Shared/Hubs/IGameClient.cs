@@ -5,6 +5,7 @@ namespace AgariTaku.Shared.Hubs
 {
     public interface IGameClient
     {
+        Task Ping();
         Task ServerSyncTick(SyncTickMessage message);
         Task AckSyncTick(SyncTickMessage message);
         Task ClientGameTick(GameTickMessage message);

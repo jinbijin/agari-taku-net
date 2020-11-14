@@ -24,10 +24,16 @@ namespace AgariTaku.Client.Services
                 .AddMessagePackProtocol()
                 .Build();
 
+            _connection.On("Ping", Ping);
             _connection.On<SyncTickMessage>("ServerSyncTick", ServerSyncTick);
             _connection.On<SyncTickMessage>("AckSyncTick", AckSyncTick);
 
             await _connection.StartAsync();
+        }
+
+        public void Ping()
+        {
+            _connection.InvokeAsync("AckPing");
         }
 
         public void ServerSyncTick(SyncTickMessage message)

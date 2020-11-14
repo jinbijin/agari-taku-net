@@ -26,6 +26,11 @@ namespace AgariTaku.Server.State
             }
         }
 
+        public void Disconnect(string connectionId)
+        {
+            _connectionIds.Remove(connectionId);
+        }
+
         public void StartSync(IReadOnlyCollection<string> connectionIds)
         {
             SyncTimer syncTimer = new SyncTimer(_hubContext, connectionIds);

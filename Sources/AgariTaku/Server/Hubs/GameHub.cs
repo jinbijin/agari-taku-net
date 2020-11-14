@@ -18,8 +18,13 @@ namespace AgariTaku.Server.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            _gameStateManager.Connect(Context.ConnectionId);
             await base.OnConnectedAsync();
+            await Clients.Caller.Ping();
+        }
+
+        public async Task AckPing()
+        {
+            _gameStateManager.Connect(Context.ConnectionId);
         }
 
         public async Task ClientSyncTick(SyncTickMessage message)
@@ -30,6 +35,12 @@ namespace AgariTaku.Server.Hubs
         public async Task ClientGameTick(GameTickMessage message)
         {
             throw new NotImplementedException();
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            _gameStateManager.Disconnect(Context.ConnectionId);
+            await base.OnDisconnectedAsync(exception);
         }
     }
 }
