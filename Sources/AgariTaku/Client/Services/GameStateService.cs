@@ -1,10 +1,13 @@
-﻿using AgariTaku.Shared.Messages;
+﻿using AgariTaku.Shared.Common;
+using AgariTaku.Shared.Messages;
+using AgariTaku.Shared.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AgariTaku.Client.Services
@@ -14,8 +17,16 @@ namespace AgariTaku.Client.Services
         private HubConnection? _connection;
         private readonly Dictionary<int, Stopwatch> _stopwatches = new();
         private readonly Dictionary<int, long> _delays = new();
+        private Timer? _timer;
 
         public event Action? OnChange;
+
+        public IDictionary<int, long> Delays => _delays;
+
+        public long AverageDelay => _delays.Any(d => d.Key >= -20) ? _delays.Where(d => d.Key >= -20).Sum(d => d.Value) / _delays.Count(d => d.Key >= -20) : 0;
+
+        public int CurrentTick { get; private set; }
+        public int ServerTick { get; private set; }
 
         public async Task StartConnection()
         {
@@ -27,6 +38,7 @@ namespace AgariTaku.Client.Services
             _connection.On("Ping", Ping);
             _connection.On<SyncTickMessage>("ServerSyncTick", ServerSyncTick);
             _connection.On<SyncTickMessage>("AckSyncTick", AckSyncTick);
+            _connection.On<GameTickMessage>("ServerGameTick", ServerGameTick);
 
             await _connection.StartAsync();
         }
@@ -38,10 +50,10 @@ namespace AgariTaku.Client.Services
 
         public void ServerSyncTick(SyncTickMessage message)
         {
-            _connection.InvokeAsync<SyncTickMessage>("ClientSyncTick", message);
             Stopwatch stopwatch = new();
-            stopwatch.Start();
             _stopwatches.Add(message.TickNumber, stopwatch);
+            stopwatch.Start();
+            _connection.InvokeAsync<SyncTickMessage>("ClientSyncTick", message);
         }
 
         public void AckSyncTick(SyncTickMessage message)
@@ -49,11 +61,35 @@ namespace AgariTaku.Client.Services
             Stopwatch stopwatch = _stopwatches[message.TickNumber];
             stopwatch.Stop();
             _delays.Add(message.TickNumber, stopwatch.ElapsedMilliseconds);
+            if (message.TickNumber == -1)
+            {
+                _timer = new(state => HandleTick(), null, 1000 - (AverageDelay / 2), 1000 / Constants.TICKS_PER_SECOND);
+            }
             OnChange?.Invoke();
         }
 
-        public IDictionary<int, long> Delays => _delays;
+        public void ServerGameTick(GameTickMessage message)
+        {
+            ServerTick = message.Ticks.First().TickNumber;
+            OnChange?.Invoke();
+        }
 
-        public double AverageDelay => _delays.Any(d => d.Key >= -20) ? _delays.Where(d => d.Key >= -20).Sum(d => d.Value) / _delays.Count(d => d.Key >= -20) : 0;
+        public void HandleTick()
+        {
+            GameTickMessage message = new()
+            {
+                Ticks = new List<GameTick>
+                {
+                    new()
+                    {
+                        Player = TickSource.East,
+                        TickNumber = CurrentTick,
+                    }
+                }
+            };
+            CurrentTick++;
+            _connection.InvokeAsync<GameTickMessage>("ClientGameTick", new() { });
+            OnChange?.Invoke();
+        }
     }
 }

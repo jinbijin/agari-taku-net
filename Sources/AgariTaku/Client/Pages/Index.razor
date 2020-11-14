@@ -6,12 +6,5 @@ Welcome to your new app.
 
 <button @onclick="Connect">Connect!</button>
 
-@foreach (var pair in GameState.Delays)
-{
-    <p>Number @(pair.Key) delay @(pair.Value) ms</p>
-}
-
-@if (GameState.AverageDelay != 0)
-{
-    <p>Average delay: @(GameState.AverageDelay)</p>
-}
+<p>Current client tick: @(GameState.CurrentTick)</p>
+<p>Current server tick: @(GameState.ServerTick)</p>
