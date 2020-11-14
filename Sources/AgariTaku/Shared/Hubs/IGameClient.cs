@@ -8,8 +8,8 @@ namespace AgariTaku.Shared.Hubs
         Task Ping();
         Task ServerSyncTick(SyncTickMessage message);
         Task AckSyncTick(SyncTickMessage message);
-        Task ClientGameTick(GameTickMessage message);
-        Task ServerGameTick(GameTickMessage message);
+        Task ClientGameTick(ClientGameTickMessage message);
+        Task ServerGameTick(ServerGameTickMessage message);
         Task SyncState(StateMessage message);
     }
 }

@@ -1,6 +1,5 @@
 ﻿using AgariTaku.Shared.Common;
 using AgariTaku.Shared.Messages;
-using AgariTaku.Shared.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -38,7 +37,7 @@ namespace AgariTaku.Client.Services
             _connection.On("Ping", Ping);
             _connection.On<SyncTickMessage>("ServerSyncTick", ServerSyncTick);
             _connection.On<SyncTickMessage>("AckSyncTick", AckSyncTick);
-            _connection.On<GameTickMessage>("ServerGameTick", ServerGameTick);
+            _connection.On<ServerGameTickMessage>("ServerGameTick", ServerGameTick);
 
             await _connection.StartAsync();
         }
@@ -68,7 +67,7 @@ namespace AgariTaku.Client.Services
             OnChange?.Invoke();
         }
 
-        public void ServerGameTick(GameTickMessage message)
+        public void ServerGameTick(ServerGameTickMessage message)
         {
             ServerTick = message.Ticks.First().TickNumber;
             OnChange?.Invoke();
@@ -76,19 +75,18 @@ namespace AgariTaku.Client.Services
 
         public void HandleTick()
         {
-            GameTickMessage message = new()
+            ClientGameTickMessage message = new()
             {
-                Ticks = new List<GameTick>
+                Ticks = new List<ClientGameTick>
                 {
                     new()
                     {
-                        Player = TickSource.East,
                         TickNumber = CurrentTick,
                     }
                 }
             };
             CurrentTick++;
-            _connection.InvokeAsync<GameTickMessage>("ClientGameTick", new() { });
+            _connection.InvokeAsync<ClientGameTickMessage>("ClientGameTick", new() { });
             OnChange?.Invoke();
         }
     }

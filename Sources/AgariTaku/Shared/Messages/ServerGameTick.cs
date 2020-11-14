@@ -2,7 +2,7 @@
 
 namespace AgariTaku.Shared.Messages
 {
-    public class GameTick
+    public class ServerGameTick
     {
         public TickSource Player { get; init; }
         public int TickNumber { get; init; }

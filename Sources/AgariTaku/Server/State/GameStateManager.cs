@@ -55,7 +55,7 @@ namespace AgariTaku.Server.State
         {
             _hubContext.Clients.All.ServerGameTick(new()
             {
-                Ticks = new List<GameTick>
+                Ticks = new List<ServerGameTick>
                 {
                     new()
                     {

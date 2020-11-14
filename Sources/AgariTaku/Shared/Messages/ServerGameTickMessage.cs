@@ -1,18 +1,17 @@
-﻿using AgariTaku.Shared.Types;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace AgariTaku.Shared.Messages
 {
-    public class GameTickMessage
+    public class ServerGameTickMessage
     {
         /// <summary>
         /// From each contributor, the last acknowledged tick.
         /// </summary>
-        public int[] AckTick { get; init; } = new int[5];
+        public int AckTick { get; init; }
         /// <summary>
         /// Ticks to (re)send.
         /// </summary>
-        public IEnumerable<GameTick> Ticks { get; init; } = Enumerable.Empty<GameTick>();
+        public IEnumerable<ServerGameTick> Ticks { get; init; } = Enumerable.Empty<ServerGameTick>();
     }
 }

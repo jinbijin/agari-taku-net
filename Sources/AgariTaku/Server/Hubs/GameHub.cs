@@ -32,9 +32,9 @@ namespace AgariTaku.Server.Hubs
             await Clients.Caller.AckSyncTick(message);
         }
 
-        public async Task ClientGameTick(GameTickMessage message)
+        public async Task ClientGameTick(ClientGameTickMessage message)
         {
-            throw new NotImplementedException();
+            // TODO
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
