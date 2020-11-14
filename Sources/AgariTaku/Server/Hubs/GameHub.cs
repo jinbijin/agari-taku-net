@@ -34,7 +34,7 @@ namespace AgariTaku.Server.Hubs
 
         public async Task ClientGameTick(ClientGameTickMessage message)
         {
-            // TODO
+            _gameStateManager.ReceiveClientTick(message, Context.ConnectionId);
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
