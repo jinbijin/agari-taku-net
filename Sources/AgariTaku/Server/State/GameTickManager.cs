@@ -18,11 +18,15 @@ namespace AgariTaku.Server.State
 
         private readonly GameState _state;
 
-        public GameTickManager(IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager)
+        public GameTickManager(IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager) : this(hubContext, connectionManager, new())
+        {
+        }
+
+        public GameTickManager(IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager, GameState state)
         {
             _hubContext = hubContext;
             _connectionManager = connectionManager;
-            _state = new();
+            _state = state;
         }
 
         public void ProcessClientMessage(ClientGameTickMessage message, TickSource source)

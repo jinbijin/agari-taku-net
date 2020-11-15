@@ -17,9 +17,13 @@ namespace AgariTaku.Client.Services
         public int ServerTick => _state.AckTicks[TickSource.Server];
         public int EchoTick => _state.AckTicks[_state.Player];
 
-        public TickService()
+        public TickService() : this(new())
         {
-            _state = new();
+        }
+
+        public TickService(ClientState state)
+        {
+            _state = state;
         }
 
         public void ReceiveMessage(ServerGameTickMessage message)
