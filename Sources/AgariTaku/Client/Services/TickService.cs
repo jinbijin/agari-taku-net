@@ -1,5 +1,6 @@
-﻿using AgariTaku.Shared.Common;
+﻿using AgariTaku.Client.State;
 using AgariTaku.Shared.Messages;
+using AgariTaku.Shared.State;
 using AgariTaku.Shared.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Collections.Generic;
@@ -12,36 +13,37 @@ namespace AgariTaku.Client.Services
     {
         private readonly object _lock = new();
 
-        private int[] _ackTicks;
-        private ServerGameTick?[,] _serverTickBuffer;
+        private readonly TickSource _player;
+
+        private readonly ClientAckTickCounter _ackTicks;
+        private readonly ServerGameTickBuffer _serverTickBuffer;
 
         private int _currentTick = -1;
-        private ClientGameTick?[] _clientTickBuffer;
+        private ClientGameTickBuffer _clientTickBuffer;
 
         public int CurrentTick => _currentTick;
-        public int ServerTick => _ackTicks[0];
-        public int EchoTick => _ackTicks[1]; // TODO[4-player] use logged wind
+        public int ServerTick => _ackTicks[TickSource.Server];
+        public int EchoTick => _ackTicks[_player];
 
         public TickService()
         {
-            _ackTicks = new int[1 + Constants.PLAYERS_PER_GAME];
-            for (int i = 0; i < 1 + Constants.PLAYERS_PER_GAME; i++)
-            {
-                _ackTicks[i] = -1;
-            }
-            _serverTickBuffer = new ServerGameTick?[1 + Constants.PLAYERS_PER_GAME, Constants.TICK_BUFFER_SIZE];
-            _clientTickBuffer = new ClientGameTick?[Constants.TICK_BUFFER_SIZE];
+            _player = TickSource.East; // TODO[4-player] Use actual in-game wind
+            _ackTicks = new();
+            _serverTickBuffer = new();
+            _clientTickBuffer = new();
         }
 
         public void ReceiveMessage(ServerGameTickMessage message)
         {
             lock (_lock)
             {
-                foreach (ServerGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _ackTicks[(int)tick.Player]))
+                foreach (ServerGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _ackTicks[tick.Player]))
                 {
-                    _ackTicks[(int)tick.Player] = tick.TickNumber;
-                    _serverTickBuffer[(int)tick.Player, tick.TickNumber % Constants.TICK_BUFFER_SIZE] = tick;
+                    _ackTicks[tick.Player] = tick.TickNumber;
+                    _serverTickBuffer[tick.Player, tick.TickNumber] = tick;
                 }
+
+                // TODO[disconnect-handling] Detect server disconnection, and abort connection
             }
         }
 
@@ -55,7 +57,7 @@ namespace AgariTaku.Client.Services
                     TickNumber = currentTick,
                     Inputs = new(),
                 };
-                _clientTickBuffer[currentTick % Constants.TICK_BUFFER_SIZE] = tick;
+                _clientTickBuffer[currentTick] = tick;
 
                 _currentTick++;
             }
@@ -66,13 +68,13 @@ namespace AgariTaku.Client.Services
             lock (_lock)
             {
                 List<ClientGameTick> ticks = new();
-                for (int i = _ackTicks[(int)TickSource.East] + 1; i < _currentTick; i++) // TODO[4-player] use logged wind
+                for (int i = _ackTicks[_player] + 1; i < _currentTick; i++)
                 {
-                    ticks.Add(_clientTickBuffer[i % Constants.TICK_BUFFER_SIZE]);
+                    ticks.Add(_clientTickBuffer[i]);
                 }
                 ClientGameTickMessage message = new()
                 {
-                    AckTick = _ackTicks,
+                    AckTick = _ackTicks.ToArray(),
                     Ticks = ticks,
                 };
                 connection.InvokeAsync<ClientGameTickMessage>("ClientGameTick", message);

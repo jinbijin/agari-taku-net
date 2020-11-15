@@ -4,7 +4,6 @@ using AgariTaku.Shared.Hubs;
 using AgariTaku.Shared.Messages;
 using AgariTaku.Shared.Types;
 using Microsoft.AspNetCore.SignalR;
-using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -27,7 +26,7 @@ namespace AgariTaku.Server.State
 
         public void Connect(string connectionId)
         {
-            _connectionManager.Connect(connectionId, TickSource.East); // TODO assign randomly
+            _connectionManager.Connect(connectionId, TickSource.East); // TODO[4-player] assign randomly
         }
 
         public void Disconnect(string connectionId)
