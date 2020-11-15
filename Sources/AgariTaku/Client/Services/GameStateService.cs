@@ -18,6 +18,8 @@ namespace AgariTaku.Client.Services
         private readonly Dictionary<int, long> _delays = new();
         private Timer? _timer;
 
+        private int[] _ackTicks = new int[5];
+
         public event Action? OnChange;
 
         public IDictionary<int, long> Delays => _delays;
@@ -25,7 +27,8 @@ namespace AgariTaku.Client.Services
         public long AverageDelay => _delays.Any(d => d.Key >= -20) ? _delays.Where(d => d.Key >= -20).Sum(d => d.Value) / _delays.Count(d => d.Key >= -20) : 0;
 
         public int CurrentTick { get; private set; }
-        public int ServerTick { get; private set; }
+        public int ServerTick => _ackTicks[0];
+        public int EchoTick => _ackTicks[1];
 
         public async Task StartConnection()
         {
@@ -69,7 +72,10 @@ namespace AgariTaku.Client.Services
 
         public void ServerGameTick(ServerGameTickMessage message)
         {
-            ServerTick = message.Ticks.First().TickNumber;
+            foreach (ServerGameTick tick in message.Ticks)
+            {
+                _ackTicks[(int)tick.Player] = tick.TickNumber;
+            }
             OnChange?.Invoke();
         }
 
@@ -77,6 +83,7 @@ namespace AgariTaku.Client.Services
         {
             ClientGameTickMessage message = new()
             {
+                AckTick = _ackTicks,
                 Ticks = new List<ClientGameTick>
                 {
                     new()

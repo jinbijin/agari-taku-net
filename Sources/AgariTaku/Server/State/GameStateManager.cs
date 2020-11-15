@@ -13,29 +13,26 @@ namespace AgariTaku.Server.State
     public class GameStateManager
     {
         private readonly IHubContext<GameHub, IGameClient> _hubContext;
-        private readonly Dictionary<string, TickSource> _connectionIds;
+        private readonly GameConnectionManager _connectionManager;
+        private readonly GameTickManager _tickManager;
         private Timer? _timer;
 
-        private int[] _ticks = new int[5];
-
-        public GameStateManager(IHubContext<GameHub, IGameClient> hubContext)
+        public GameStateManager(IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager, GameTickManager tickManager)
         {
             _hubContext = hubContext;
-            _connectionIds = new();
+            _connectionManager = connectionManager;
+            _tickManager = tickManager;
+            _connectionManager.OnGameFull += StartSync;
         }
 
         public void Connect(string connectionId)
         {
-            _connectionIds.Add(connectionId, TickSource.East);
-            if (_connectionIds.Count == Constants.PLAYERS_PER_GAME)
-            {
-                StartSync(_connectionIds.Keys);
-            }
+            _connectionManager.Connect(connectionId, TickSource.East); // TODO assign randomly
         }
 
         public void Disconnect(string connectionId)
         {
-            _connectionIds.Remove(connectionId);
+            _connectionManager.Disconnect(connectionId);
             // Testing with one connection
             _timer?.Dispose();
         }
@@ -49,10 +46,7 @@ namespace AgariTaku.Server.State
 
         public void ReceiveClientTick(ClientGameTickMessage message, string connectionId)
         {
-            foreach (ClientGameTick tick in message.Ticks)
-            {
-                _ticks[(short)_connectionIds[connectionId]] = Math.Max(tick.TickNumber, _ticks[(short)_connectionIds[connectionId]]);
-            }
+            _tickManager.ProcessClientMessage(message, _connectionManager.GetSource(connectionId).Value);
         }
 
         private void FinishSync()
@@ -62,22 +56,8 @@ namespace AgariTaku.Server.State
 
         private void HandleTick()
         {
-            foreach (var key in _connectionIds.Keys)
-            {
-                _hubContext.Clients.Client(key).ServerGameTick(new()
-                {
-                    AckTick = _ticks[(short)_connectionIds[key]],
-                    Ticks = new List<ServerGameTick>
-                    {
-                        new()
-                        {
-                            TickNumber = _ticks[(short)TickSource.Server],
-                            Player = TickSource.Server,
-                        }
-                    }
-                });
-            }
-            _ticks[(short)TickSource.Server]++;
+            _tickManager.AddServerTick();
+            _tickManager.SendAccumulatedTicks();
         }
     }
 }

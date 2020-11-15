@@ -24,6 +24,8 @@ namespace AgariTaku.Server
             services.AddRazorPages();
 
             services.AddSingleton<GameStateManager>();
+            services.AddSingleton<GameConnectionManager>();
+            services.AddSingleton<GameTickManager>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
