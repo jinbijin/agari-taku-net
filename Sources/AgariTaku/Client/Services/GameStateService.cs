@@ -13,12 +13,12 @@ namespace AgariTaku.Client.Services
 {
     public class GameStateService
     {
+        private readonly TickService _tickService;
+
         private HubConnection? _connection;
         private readonly Dictionary<int, Stopwatch> _stopwatches = new();
         private readonly Dictionary<int, long> _delays = new();
         private Timer? _timer;
-
-        private int[] _ackTicks = new int[5];
 
         public event Action? OnChange;
 
@@ -26,9 +26,14 @@ namespace AgariTaku.Client.Services
 
         public long AverageDelay => _delays.Any(d => d.Key >= -20) ? _delays.Where(d => d.Key >= -20).Sum(d => d.Value) / _delays.Count(d => d.Key >= -20) : 0;
 
-        public int CurrentTick { get; private set; }
-        public int ServerTick => _ackTicks[0];
-        public int EchoTick => _ackTicks[1];
+        public int CurrentTick => _tickService.CurrentTick;
+        public int ServerTick => _tickService.ServerTick;
+        public int EchoTick => _tickService.EchoTick;
+
+        public GameStateService()
+        {
+            _tickService = new TickService();
+        }
 
         public async Task StartConnection()
         {
@@ -63,6 +68,8 @@ namespace AgariTaku.Client.Services
             Stopwatch stopwatch = _stopwatches[message.TickNumber];
             stopwatch.Stop();
             _delays.Add(message.TickNumber, stopwatch.ElapsedMilliseconds);
+
+            // TODO[sync-packet-loss] Packet loss handling during sync
             if (message.TickNumber == -1)
             {
                 _timer = new(state => HandleTick(), null, 1000 - (AverageDelay / 2), 1000 / Constants.TICKS_PER_SECOND);
@@ -72,28 +79,14 @@ namespace AgariTaku.Client.Services
 
         public void ServerGameTick(ServerGameTickMessage message)
         {
-            foreach (ServerGameTick tick in message.Ticks)
-            {
-                _ackTicks[(int)tick.Player] = tick.TickNumber;
-            }
+            _tickService.ReceiveMessage(message);
             OnChange?.Invoke();
         }
 
         public void HandleTick()
         {
-            ClientGameTickMessage message = new()
-            {
-                AckTick = _ackTicks,
-                Ticks = new List<ClientGameTick>
-                {
-                    new()
-                    {
-                        TickNumber = CurrentTick,
-                    }
-                }
-            };
-            CurrentTick++;
-            _connection.InvokeAsync<ClientGameTickMessage>("ClientGameTick", new() { });
+            _tickService.AddTick();
+            _tickService.SendAccumulatedTicks(_connection);
             OnChange?.Invoke();
         }
     }

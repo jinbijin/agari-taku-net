@@ -22,6 +22,7 @@ namespace AgariTaku.Server.Hubs
             await Clients.Caller.Ping();
         }
 
+        // TODO[ping-retry] Retry ping
         public async Task AckPing()
         {
             _gameStateManager.Connect(Context.ConnectionId);

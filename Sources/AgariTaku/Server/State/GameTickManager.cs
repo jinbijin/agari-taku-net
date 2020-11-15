@@ -12,8 +12,6 @@ namespace AgariTaku.Server.State
 {
     public class GameTickManager
     {
-        private const int BUFFER_SIZE = 2 * Constants.TICKS_PER_SECOND;
-
         private readonly IHubContext<GameHub, IGameClient> _hubContext;
         private readonly GameConnectionManager _connectionManager;
         private readonly object _lock = new();
@@ -26,7 +24,14 @@ namespace AgariTaku.Server.State
             _hubContext = hubContext;
             _connectionManager = connectionManager;
             _ackTicks = new int[1 + Constants.PLAYERS_PER_GAME, 1 + Constants.PLAYERS_PER_GAME];
-            _tickBuffer = new ServerGameTick?[1 + Constants.PLAYERS_PER_GAME, BUFFER_SIZE];
+            for (int i = 0; i < 1 + Constants.PLAYERS_PER_GAME; i++)
+            {
+                for (int j = 0; j < 1 + Constants.PLAYERS_PER_GAME; j++)
+                {
+                    _ackTicks[i, j] = -1;
+                }
+            }
+            _tickBuffer = new ServerGameTick?[1 + Constants.PLAYERS_PER_GAME, Constants.TICK_BUFFER_SIZE];
         }
 
         public void ProcessClientMessage(ClientGameTickMessage message, TickSource source)
@@ -43,7 +48,7 @@ namespace AgariTaku.Server.State
 
                 foreach (ClientGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _ackTicks[(int)TickSource.Server, (int)source]))
                 {
-                    _tickBuffer[(int)source, tick.TickNumber % BUFFER_SIZE] = new ServerGameTick
+                    _tickBuffer[(int)source, tick.TickNumber % Constants.TICK_BUFFER_SIZE] = new ServerGameTick
                     {
                         Player = source,
                         TickNumber = tick.TickNumber,
@@ -52,7 +57,8 @@ namespace AgariTaku.Server.State
                     _ackTicks[(int)TickSource.Server, (int)source] = tick.TickNumber;
                 }
 
-                // TODO if there is any client more than two seconds behind, disconnect them.
+                // TODO[disconnect-handling] if there is any client more than two seconds behind, disconnect them
+                // TODO[input-takeover] and then have the server take over their inputs
             }
         }
 
@@ -61,7 +67,7 @@ namespace AgariTaku.Server.State
             lock (_lock)
             {
                 int currentTick = _ackTicks[(int)TickSource.Server, (int)TickSource.Server] + 1;
-                _tickBuffer[(int)TickSource.Server, currentTick % BUFFER_SIZE] = new ServerGameTick
+                _tickBuffer[(int)TickSource.Server, currentTick % Constants.TICK_BUFFER_SIZE] = new ServerGameTick
                 {
                     Player = TickSource.Server,
                     TickNumber = currentTick,
@@ -83,7 +89,7 @@ namespace AgariTaku.Server.State
                     {
                         for (int j = _ackTicks[(int)connection.Source, i] + 1; j <= _ackTicks[(int)TickSource.Server, i]; j++)
                         {
-                            ticks.Add(_tickBuffer[i, j % BUFFER_SIZE]);
+                            ticks.Add(_tickBuffer[i, j % Constants.TICK_BUFFER_SIZE]);
                         }
                     }
                     _hubContext.Clients.Client(connection.ConnectionId).ServerGameTick(new()

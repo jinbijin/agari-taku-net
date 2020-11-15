@@ -10,7 +10,7 @@ namespace AgariTaku.Shared.Messages
         /// </summary>
         public int AckTick { get; init; }
         /// <summary>
-        /// Ticks to (re)send.
+        /// Ticks to (re)send. Must be in ascending tick order per player.
         /// </summary>
         public IEnumerable<ServerGameTick> Ticks { get; init; } = Enumerable.Empty<ServerGameTick>();
     }
