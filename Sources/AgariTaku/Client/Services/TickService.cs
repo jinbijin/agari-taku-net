@@ -1,6 +1,4 @@
-﻿using AgariTaku.Client.State;
-using AgariTaku.Shared.Messages;
-using AgariTaku.Shared.State;
+﻿using AgariTaku.Shared.Messages;
 using AgariTaku.Shared.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Collections.Generic;
@@ -13,34 +11,25 @@ namespace AgariTaku.Client.Services
     {
         private readonly object _lock = new();
 
-        private readonly TickSource _player;
+        private readonly ClientState _state;
 
-        private readonly ClientAckTickCounter _ackTicks;
-        private readonly ServerGameTickBuffer _serverTickBuffer;
-
-        private int _currentTick = -1;
-        private ClientGameTickBuffer _clientTickBuffer;
-
-        public int CurrentTick => _currentTick;
-        public int ServerTick => _ackTicks[TickSource.Server];
-        public int EchoTick => _ackTicks[_player];
+        public int CurrentTick => _state.CurrentTick;
+        public int ServerTick => _state.AckTicks[TickSource.Server];
+        public int EchoTick => _state.AckTicks[_state.Player];
 
         public TickService()
         {
-            _player = TickSource.East; // TODO[4-player] Use actual in-game wind
-            _ackTicks = new();
-            _serverTickBuffer = new();
-            _clientTickBuffer = new();
+            _state = new();
         }
 
         public void ReceiveMessage(ServerGameTickMessage message)
         {
             lock (_lock)
             {
-                foreach (ServerGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _ackTicks[tick.Player]))
+                foreach (ServerGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _state.AckTicks[tick.Player]))
                 {
-                    _ackTicks[tick.Player] = tick.TickNumber;
-                    _serverTickBuffer[tick.Player, tick.TickNumber] = tick;
+                    _state.AckTicks[tick.Player] = tick.TickNumber;
+                    _state.ServerTickBuffer[tick.Player, tick.TickNumber] = tick;
                 }
 
                 // TODO[disconnect-handling] Detect server disconnection, and abort connection
@@ -51,15 +40,15 @@ namespace AgariTaku.Client.Services
         {
             lock (_lock)
             {
-                int currentTick = _currentTick + 1;
+                int currentTick = _state.CurrentTick + 1;
                 ClientGameTick tick = new()
                 {
                     TickNumber = currentTick,
                     Inputs = new(),
                 };
-                _clientTickBuffer[currentTick] = tick;
+                _state.ClientTickBuffer[currentTick] = tick;
 
-                _currentTick++;
+                _state.CurrentTick++;
             }
         }
 
@@ -68,13 +57,13 @@ namespace AgariTaku.Client.Services
             lock (_lock)
             {
                 List<ClientGameTick> ticks = new();
-                for (int i = _ackTicks[_player] + 1; i < _currentTick; i++)
+                for (int i = _state.AckTicks[_state.Player] + 1; i < _state.CurrentTick; i++)
                 {
-                    ticks.Add(_clientTickBuffer[i]);
+                    ticks.Add(_state.ClientTickBuffer[i]);
                 }
                 ClientGameTickMessage message = new()
                 {
-                    AckTick = _ackTicks.ToArray(),
+                    AckTick = _state.AckTicks.ToArray(),
                     Ticks = ticks,
                 };
                 connection.InvokeAsync<ClientGameTickMessage>("ClientGameTick", message);

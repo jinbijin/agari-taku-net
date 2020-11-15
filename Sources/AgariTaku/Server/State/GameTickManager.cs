@@ -3,7 +3,6 @@ using AgariTaku.Server.Types;
 using AgariTaku.Shared.Common;
 using AgariTaku.Shared.Hubs;
 using AgariTaku.Shared.Messages;
-using AgariTaku.Shared.State;
 using AgariTaku.Shared.Types;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Generic;
@@ -17,15 +16,13 @@ namespace AgariTaku.Server.State
         private readonly GameConnectionManager _connectionManager;
         private readonly object _lock = new();
 
-        private ServerAckTickCounter _ackTicks; // Ticks acked per client per receiver. For server, this is ticks received. (And [0, 0] is the internal tick counter.)
-        private ServerGameTickBuffer _tickBuffer; // Ticks stored per client;
+        private readonly GameState _state;
 
         public GameTickManager(IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager)
         {
             _hubContext = hubContext;
             _connectionManager = connectionManager;
-            _ackTicks = new();
-            _tickBuffer = new();
+            _state = new();
         }
 
         public void ProcessClientMessage(ClientGameTickMessage message, TickSource source)
@@ -37,18 +34,18 @@ namespace AgariTaku.Server.State
             {
                 for (int i = 0; i < 1 + Constants.PLAYERS_PER_GAME; i++)
                 {
-                    _ackTicks[source, (TickSource)i] = _newAckTicks[i];
+                    _state.AckTicks[source, (TickSource)i] = _newAckTicks[i];
                 }
 
-                foreach (ClientGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _ackTicks[TickSource.Server, source]))
+                foreach (ClientGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _state.AckTicks[TickSource.Server, source]))
                 {
-                    _tickBuffer[source, tick.TickNumber] = new ServerGameTick
+                    _state.TickBuffer[source, tick.TickNumber] = new ServerGameTick
                     {
                         Player = source,
                         TickNumber = tick.TickNumber,
                         Inputs = tick.Inputs,
                     };
-                    _ackTicks[TickSource.Server, source] = tick.TickNumber;
+                    _state.AckTicks[TickSource.Server, source] = tick.TickNumber;
                 }
 
                 // TODO[disconnect-handling] if there is any client more than two seconds behind, disconnect them
@@ -60,14 +57,14 @@ namespace AgariTaku.Server.State
         {
             lock (_lock)
             {
-                int currentTick = _ackTicks[TickSource.Server, TickSource.Server] + 1;
-                _tickBuffer[TickSource.Server, currentTick] = new ServerGameTick
+                int currentTick = _state.AckTicks[TickSource.Server, TickSource.Server] + 1;
+                _state.TickBuffer[TickSource.Server, currentTick] = new ServerGameTick
                 {
                     Player = TickSource.Server,
                     TickNumber = currentTick,
                     Inputs = new(),
                 };
-                _ackTicks[TickSource.Server, TickSource.Server]++;
+                _state.AckTicks[TickSource.Server, TickSource.Server]++;
             }
         }
 
@@ -81,14 +78,14 @@ namespace AgariTaku.Server.State
                     List<ServerGameTick> ticks = new();
                     for (int i = 0; i < 1 + Constants.PLAYERS_PER_GAME; i++)
                     {
-                        for (int j = _ackTicks[connection.Source, (TickSource)i] + 1; j <= _ackTicks[TickSource.Server, (TickSource)i]; j++)
+                        for (int j = _state.AckTicks[connection.Source, (TickSource)i] + 1; j <= _state.AckTicks[TickSource.Server, (TickSource)i]; j++)
                         {
-                            ticks.Add(_tickBuffer[(TickSource)i, j]);
+                            ticks.Add(_state.TickBuffer[(TickSource)i, j]);
                         }
                     }
                     _hubContext.Clients.Client(connection.ConnectionId).ServerGameTick(new()
                     {
-                        AckTick = _ackTicks[TickSource.Server, connection.Source],
+                        AckTick = _state.AckTicks[TickSource.Server, connection.Source],
                         Ticks = ticks,
                     });
                 }
