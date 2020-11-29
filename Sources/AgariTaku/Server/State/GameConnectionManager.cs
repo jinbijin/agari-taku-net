@@ -8,11 +8,17 @@ namespace AgariTaku.Server.State
 {
     public class GameConnectionManager
     {
+        private readonly IConfiguration _configuration;
         private readonly object _lock = new();
         private readonly Dictionary<string, GameConnection> _connectionsById = new();
         private readonly Dictionary<TickSource, GameConnection> _connectionsBySource = new();
 
         public event Action<IReadOnlyCollection<string>>? OnGameFull;
+
+        public GameConnectionManager(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         public void Connect(string connectionId, TickSource source)
         {
@@ -34,7 +40,7 @@ namespace AgariTaku.Server.State
                     _connectionsBySource.Add(source, connection);
                 }
 
-                if (_connectionsById.Count == Constants.PLAYERS_PER_GAME && _connectionsBySource.Count == Constants.PLAYERS_PER_GAME)
+                if (_connectionsById.Count == _configuration.PlayersPerGame && _connectionsBySource.Count == _configuration.PlayersPerGame)
                 {
                     OnGameFull?.Invoke(_connectionsById.Keys);
                 }

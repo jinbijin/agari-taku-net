@@ -14,12 +14,12 @@ namespace AgariTaku.Server.State
             set => _counter[(int)client, (int)source] = value;
         }
 
-        public ServerAckTickCounter()
+        public ServerAckTickCounter(IConfiguration configuration)
         {
-            _counter = new int[1 + Constants.PLAYERS_PER_GAME, 1 + Constants.PLAYERS_PER_GAME];
-            for (int i = 0; i < 1 + Constants.PLAYERS_PER_GAME; i++)
+            _counter = new int[1 + configuration.PlayersPerGame, 1 + configuration.PlayersPerGame];
+            for (int i = 0; i < 1 + configuration.PlayersPerGame; i++)
             {
-                for (int j = 0; j < 1 + Constants.PLAYERS_PER_GAME; j++)
+                for (int j = 0; j < 1 + configuration.PlayersPerGame; j++)
                 {
                     _counter[i, j] = -1;
                 }

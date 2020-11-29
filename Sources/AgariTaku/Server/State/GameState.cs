@@ -1,4 +1,5 @@
-﻿using AgariTaku.Shared.State;
+﻿using AgariTaku.Shared.Common;
+using AgariTaku.Shared.State;
 
 namespace AgariTaku.Server.State
 {
@@ -7,10 +8,10 @@ namespace AgariTaku.Server.State
         public ServerAckTickCounter AckTicks { get; }
         public ServerGameTickBuffer TickBuffer { get; }
 
-        public GameState()
+        public GameState(IConfiguration configuration)
         {
-            AckTicks = new();
-            TickBuffer = new();
+            AckTicks = new(configuration);
+            TickBuffer = new(configuration);
         }
     }
 }

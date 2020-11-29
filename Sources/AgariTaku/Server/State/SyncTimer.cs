@@ -11,6 +11,7 @@ namespace AgariTaku.Server.State
 {
     public sealed class SyncTimer
     {
+        private readonly IConfiguration _configuration;
         private Timer? _timer;
         private readonly IGameClient _recipients;
 
@@ -18,15 +19,16 @@ namespace AgariTaku.Server.State
 
         public event Action? FinishSync;
 
-        public SyncTimer(IHubContext<GameHub, IGameClient> hubContext, IReadOnlyCollection<string> connectionIds)
+        public SyncTimer(IConfiguration configuration, IHubContext<GameHub, IGameClient> hubContext, IReadOnlyCollection<string> connectionIds)
         {
+            _configuration = configuration;
             _recipients = hubContext.Clients.Clients(connectionIds);
         }
 
         public void StartSync()
         {
-            _tickNumber = -Constants.SYNC_TICK_COUNT;
-            _timer = new(async state => await HandleTick(), null, 0, 1000 / Constants.TICKS_PER_SECOND);
+            _tickNumber = -_configuration.SyncTickCount;
+            _timer = new(async state => await HandleTick(), null, 0, 1000 / _configuration.TicksPerSecond);
         }
 
         public async Task HandleTick()

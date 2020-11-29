@@ -11,13 +11,17 @@ namespace AgariTaku.Server.State
 {
     public class GameStateManager
     {
+        private readonly IConfiguration _configuration;
+
         private readonly IHubContext<GameHub, IGameClient> _hubContext;
         private readonly GameConnectionManager _connectionManager;
         private readonly GameTickManager _tickManager;
         private Timer? _timer;
 
-        public GameStateManager(IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager, GameTickManager tickManager)
+        public GameStateManager(IConfiguration configuration, IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager, GameTickManager tickManager)
         {
+            _configuration = configuration;
+
             _hubContext = hubContext;
             _connectionManager = connectionManager;
             _tickManager = tickManager;
@@ -38,7 +42,7 @@ namespace AgariTaku.Server.State
 
         public void StartSync(IReadOnlyCollection<string> connectionIds)
         {
-            SyncTimer syncTimer = new SyncTimer(_hubContext, connectionIds);
+            SyncTimer syncTimer = new SyncTimer(_configuration, _hubContext, connectionIds);
             syncTimer.FinishSync += FinishSync;
             syncTimer.StartSync();
         }
@@ -50,7 +54,7 @@ namespace AgariTaku.Server.State
 
         private void FinishSync()
         {
-            _timer = new(state => HandleTick(), null, 1000, 1000 / Constants.TICKS_PER_SECOND);
+            _timer = new(state => HandleTick(), null, 1000, 1000 / _configuration.TicksPerSecond);
         }
 
         private void HandleTick()

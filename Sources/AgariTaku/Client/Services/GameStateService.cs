@@ -13,6 +13,7 @@ namespace AgariTaku.Client.Services
 {
     public class GameStateService
     {
+        private readonly IConfiguration _configuration;
         private readonly TickService _tickService;
 
         private HubConnection? _connection;
@@ -30,9 +31,10 @@ namespace AgariTaku.Client.Services
         public int ServerTick => _tickService.ServerTick;
         public int EchoTick => _tickService.EchoTick;
 
-        public GameStateService()
+        public GameStateService(IConfiguration configuration)
         {
-            _tickService = new TickService();
+            _configuration = configuration;
+            _tickService = new TickService(configuration);
         }
 
         public async Task StartConnection()
@@ -72,7 +74,7 @@ namespace AgariTaku.Client.Services
             // TODO[sync-packet-loss] Packet loss handling during sync
             if (message.TickNumber == -1)
             {
-                _timer = new(state => HandleTick(), null, 1000 - (AverageDelay / 2), 1000 / Constants.TICKS_PER_SECOND);
+                _timer = new(state => HandleTick(), null, 1000 - (AverageDelay / 2), 1000 / _configuration.TicksPerSecond);
             }
             OnChange?.Invoke();
         }

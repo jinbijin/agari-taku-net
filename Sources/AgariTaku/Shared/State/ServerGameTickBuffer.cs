@@ -9,17 +9,19 @@ namespace AgariTaku.Shared.State
     /// </summary>
     public class ServerGameTickBuffer
     {
+        private readonly IConfiguration _configuration;
         private readonly ServerGameTick?[,] _buffer; // Ticks stored per client;
 
         public ServerGameTick? this[TickSource source, int i]
         {
-            get => _buffer[(int)source, i % Constants.TICK_BUFFER_SIZE];
-            set => _buffer[(int)source, i % Constants.TICK_BUFFER_SIZE] = value;
+            get => _buffer[(int)source, i % _configuration.TickBufferSize];
+            set => _buffer[(int)source, i % _configuration.TickBufferSize] = value;
         }
 
-        public ServerGameTickBuffer()
+        public ServerGameTickBuffer(IConfiguration configuration)
         {
-            _buffer = new ServerGameTick?[1 + Constants.PLAYERS_PER_GAME, Constants.TICK_BUFFER_SIZE];
+            _configuration = configuration;
+            _buffer = new ServerGameTick?[1 + _configuration.PlayersPerGame, _configuration.TickBufferSize];
         }
     }
 }

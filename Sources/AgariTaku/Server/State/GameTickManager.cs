@@ -13,18 +13,21 @@ namespace AgariTaku.Server.State
     // TODO[test] Write unit tests
     public class GameTickManager
     {
+        private readonly IConfiguration _configuration;
+
         private readonly IHubContext<GameHub, IGameClient> _hubContext;
         private readonly GameConnectionManager _connectionManager;
         private readonly object _lock = new();
 
         private readonly GameState _state;
 
-        public GameTickManager(IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager) : this(hubContext, connectionManager, new())
+        public GameTickManager(IConfiguration configuration, IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager) : this(configuration, hubContext, connectionManager, new(configuration))
         {
         }
 
-        public GameTickManager(IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager, GameState state)
+        public GameTickManager(IConfiguration configuration, IHubContext<GameHub, IGameClient> hubContext, GameConnectionManager connectionManager, GameState state)
         {
+            _configuration = configuration;
             _hubContext = hubContext;
             _connectionManager = connectionManager;
             _state = state;
@@ -32,12 +35,12 @@ namespace AgariTaku.Server.State
 
         public void ProcessClientMessage(ClientGameTickMessage message, TickSource source)
         {
-            int[] _newAckTicks = new int[1 + Constants.PLAYERS_PER_GAME];
+            int[] _newAckTicks = new int[1 + _configuration.PlayersPerGame];
             message.AckTick.CopyTo(_newAckTicks, 0);
 
             lock (_lock)
             {
-                for (int i = 0; i < 1 + Constants.PLAYERS_PER_GAME; i++)
+                for (int i = 0; i < 1 + _configuration.PlayersPerGame; i++)
                 {
                     _state.AckTicks[source, (TickSource)i] = _newAckTicks[i];
                 }
@@ -81,7 +84,7 @@ namespace AgariTaku.Server.State
                 foreach (GameConnection connection in connections)
                 {
                     List<ServerGameTick> ticks = new();
-                    for (int i = 0; i < 1 + Constants.PLAYERS_PER_GAME; i++)
+                    for (int i = 0; i < 1 + _configuration.PlayersPerGame; i++)
                     {
                         for (int j = _state.AckTicks[connection.Source, (TickSource)i] + 1; j <= _state.AckTicks[TickSource.Server, (TickSource)i]; j++)
                         {

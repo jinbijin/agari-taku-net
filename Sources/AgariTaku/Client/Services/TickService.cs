@@ -1,4 +1,5 @@
-﻿using AgariTaku.Shared.Messages;
+﻿using AgariTaku.Shared.Common;
+using AgariTaku.Shared.Messages;
 using AgariTaku.Shared.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Collections.Generic;
@@ -18,11 +19,11 @@ namespace AgariTaku.Client.Services
         public int ServerTick => _state.AckTicks[TickSource.Server];
         public int EchoTick => _state.AckTicks[_state.Player];
 
-        public TickService() : this(new())
+        public TickService(IConfiguration configuration) : this(configuration, new(configuration))
         {
         }
 
-        public TickService(ClientState state)
+        public TickService(IConfiguration configuration, ClientState state)
         {
             _state = state;
         }

@@ -20,6 +20,7 @@ namespace AgariTaku.Client
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
             builder.Services.AddScoped<GameStateService>();
+            builder.Services.AddSingleton<AgariTaku.Shared.Common.IConfiguration, AgariTaku.Shared.Common.Configuration>();
 
             await builder.Build().RunAsync();
         }

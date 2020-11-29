@@ -8,17 +8,19 @@ namespace AgariTaku.Shared.State
     /// </summary>
     public class ClientGameTickBuffer
     {
+        private readonly IConfiguration _configuration;
         private readonly ClientGameTick?[] _buffer;
 
         public ClientGameTick? this[int i]
         {
-            get => _buffer[i % Constants.TICK_BUFFER_SIZE];
-            set => _buffer[i % Constants.TICK_BUFFER_SIZE] = value;
+            get => _buffer[i % _configuration.TickBufferSize];
+            set => _buffer[i % _configuration.TickBufferSize] = value;
         }
 
-        public ClientGameTickBuffer()
+        public ClientGameTickBuffer(IConfiguration configuration)
         {
-            _buffer = new ClientGameTick?[Constants.TICK_BUFFER_SIZE];
+            _configuration = configuration;
+            _buffer = new ClientGameTick?[_configuration.TickBufferSize];
         }
     }
 }
