@@ -7,7 +7,7 @@ namespace AgariTaku.Client.Services
 {
     public class ClientState
     {
-        public TickSource Player { get; set; }
+        public TickSource Player { get; }
 
         public ClientAckTickCounter AckTicks { get; }
         public ServerGameTickBuffer ServerTickBuffer { get; }
