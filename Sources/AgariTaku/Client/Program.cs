@@ -1,12 +1,9 @@
+using AgariTaku.Client.HubClients;
 using AgariTaku.Client.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AgariTaku.Client
@@ -21,6 +18,7 @@ namespace AgariTaku.Client
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
             builder.Services.AddScoped<GameStateService>();
             builder.Services.AddSingleton<AgariTaku.Shared.Common.IConfiguration, AgariTaku.Shared.Common.Configuration>();
+            builder.Services.AddSingleton<IGameHubClientFactory, GameHubClientFactory>();
 
             await builder.Build().RunAsync();
         }

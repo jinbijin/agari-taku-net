@@ -1,4 +1,5 @@
-﻿using AgariTaku.Shared.Common;
+﻿using AgariTaku.Client.HubClients;
+using AgariTaku.Shared.Common;
 using AgariTaku.Shared.Messages;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,9 +15,10 @@ namespace AgariTaku.Client.Services
     public class GameStateService
     {
         private readonly IConfiguration _configuration;
+        private readonly IGameHubClientFactory _gameHubClientFactory;
         private readonly TickService _tickService;
 
-        private HubConnection? _connection;
+        private IGameHubClient _connection;
         private readonly Dictionary<int, Stopwatch> _stopwatches = new();
         private readonly Dictionary<int, long> _delays = new();
         private Timer? _timer;
@@ -31,30 +33,23 @@ namespace AgariTaku.Client.Services
         public int ServerTick => _tickService.ServerTick;
         public int EchoTick => _tickService.EchoTick;
 
-        public GameStateService(IConfiguration configuration)
+        public GameStateService(IConfiguration configuration, IGameHubClientFactory gameHubClientFactory)
         {
             _configuration = configuration;
+            _gameHubClientFactory = gameHubClientFactory;
             _tickService = new TickService(configuration);
         }
 
         public async Task StartConnection()
         {
-            _connection = new HubConnectionBuilder()
-                .WithUrl($"https://localhost:44324/gamehub")
-                .AddMessagePackProtocol()
-                .Build();
+            _connection = _gameHubClientFactory.Create(Ping, ServerSyncTick, AckSyncTick, ServerGameTick);
 
-            _connection.On("Ping", Ping);
-            _connection.On<SyncTickMessage>("ServerSyncTick", ServerSyncTick);
-            _connection.On<SyncTickMessage>("AckSyncTick", AckSyncTick);
-            _connection.On<ServerGameTickMessage>("ServerGameTick", ServerGameTick);
-
-            await _connection.StartAsync();
+            await _connection.StartConnection();
         }
 
         public void Ping()
         {
-            _connection.InvokeAsync("AckPing");
+            _connection.AckPing();
         }
 
         public void ServerSyncTick(SyncTickMessage message)
@@ -62,7 +57,7 @@ namespace AgariTaku.Client.Services
             Stopwatch stopwatch = new();
             _stopwatches.Add(message.TickNumber, stopwatch);
             stopwatch.Start();
-            _connection.InvokeAsync<SyncTickMessage>("ClientSyncTick", message);
+            _connection.ClientSyncTick(message);
         }
 
         public void AckSyncTick(SyncTickMessage message)

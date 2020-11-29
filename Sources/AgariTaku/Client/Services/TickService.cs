@@ -1,7 +1,7 @@
-﻿using AgariTaku.Shared.Common;
+﻿using AgariTaku.Client.HubClients;
+using AgariTaku.Shared.Common;
 using AgariTaku.Shared.Messages;
 using AgariTaku.Shared.Types;
-using Microsoft.AspNetCore.SignalR.Client;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -60,7 +60,7 @@ namespace AgariTaku.Client.Services
             }
         }
 
-        public void SendAccumulatedTicks(HubConnection? connection)
+        public void SendAccumulatedTicks(IGameHubClient? connection)
         {
             lock (_lock)
             {
@@ -74,7 +74,7 @@ namespace AgariTaku.Client.Services
                     AckTick = _state.AckTicks.ToArray(),
                     Ticks = ticks,
                 };
-                connection.InvokeAsync<ClientGameTickMessage>("ClientGameTick", message);
+                connection?.ClientGameTick(message);
             }
         }
     }
