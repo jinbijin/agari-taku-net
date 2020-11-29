@@ -6,7 +6,7 @@ namespace AgariTaku.Shared.Messages
     public class ServerGameTickMessage
     {
         /// <summary>
-        /// From each contributor, the last acknowledged tick.
+        /// The last acknowledged tick from the recipient to the server.
         /// </summary>
         public int AckTick { get; init; }
         /// <summary>

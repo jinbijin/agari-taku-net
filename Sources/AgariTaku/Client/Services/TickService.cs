@@ -32,6 +32,8 @@ namespace AgariTaku.Client.Services
         {
             lock (_lock)
             {
+                _state.AckTicks[_state.Player] = message.AckTick;
+
                 foreach (ServerGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _state.AckTicks[tick.Player]))
                 {
                     _state.AckTicks[tick.Player] = tick.TickNumber;
@@ -63,7 +65,7 @@ namespace AgariTaku.Client.Services
             lock (_lock)
             {
                 List<ClientGameTick> ticks = new();
-                for (int i = _state.AckTicks[_state.Player] + 1; i < _state.CurrentTick; i++)
+                for (int i = _state.AckTicks[_state.Player] + 1; i <= _state.CurrentTick; i++)
                 {
                     ticks.Add(_state.ClientTickBuffer[i]);
                 }
