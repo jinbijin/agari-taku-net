@@ -8,7 +8,6 @@ using System.Linq;
 namespace AgariTaku.Client.Services
 {
     // TODO[sync-correction] keep track of sync with server, and correct if necessary
-    // TODO[test] Write unit tests
     public class TickService
     {
         private readonly object _lock = new();
@@ -32,8 +31,6 @@ namespace AgariTaku.Client.Services
         {
             lock (_lock)
             {
-                _state.AckTicks[_state.Player] = message.AckTick;
-
                 foreach (ServerGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _state.AckTicks[tick.Player]))
                 {
                     _state.AckTicks[tick.Player] = tick.TickNumber;

@@ -47,6 +47,8 @@ namespace AgariTaku.Server.State
 
                 foreach (ClientGameTick tick in message.Ticks.Where(tick => tick.TickNumber > _state.AckTicks[TickSource.Server, source]))
                 {
+                    // TODO[validation] Validate tick here!
+
                     _state.TickBuffer[source, tick.TickNumber] = new ServerGameTick
                     {
                         Player = source,
@@ -93,7 +95,6 @@ namespace AgariTaku.Server.State
                     }
                     _hubContext.Clients.Client(connection.ConnectionId).ServerGameTick(new()
                     {
-                        AckTick = _state.AckTicks[TickSource.Server, connection.Source],
                         Ticks = ticks,
                     });
                 }

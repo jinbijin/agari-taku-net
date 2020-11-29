@@ -8,6 +8,7 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using Moq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -95,6 +96,94 @@ namespace AgariTaku.Tests.Client
 
             // Assert
             _clientState.ClientTickBuffer.Slice(0, 5).Select(tick => tick?.TickNumber).Should().Equal(10, 11, 12, 8, 9);
+        }
+
+        [Fact]
+        public void ReceiveMessageShouldSetAckTicks()
+        {
+            // Arrange
+            ServerGameTickMessage message = new()
+            {
+                Ticks = new List<ServerGameTick>
+                {
+                    new() { Player = TickSource.Server, TickNumber = 10 },
+                    new() { Player = TickSource.East, TickNumber = 8 },
+                    new() { Player = TickSource.South, TickNumber = 10 },
+                    new() { Player = TickSource.West, TickNumber = 10 },
+                    new() { Player = TickSource.North, TickNumber = 11 },
+                },
+            };
+
+            // Act
+            _tickService.ReceiveMessage(message);
+
+            // Assert
+            _clientState.AckTicks.ToArray().Should().Equal(10, 8, 10, 10, 11);
+        }
+
+        [Fact]
+        public void ReceiveMessageShouldAddTicksToBuffer()
+        {
+            // Arrange
+            ServerGameTickMessage message = new()
+            {
+                Ticks = new List<ServerGameTick>
+                {
+                    new() { Player = TickSource.Server, TickNumber = 10 },
+                    new() { Player = TickSource.East, TickNumber = 8 },
+                    new() { Player = TickSource.South, TickNumber = 10 },
+                    new() { Player = TickSource.West, TickNumber = 10 },
+                    new() { Player = TickSource.North, TickNumber = 11 },
+                },
+            };
+
+            // Act
+            _tickService.ReceiveMessage(message);
+
+            // Assert
+            using AssertionScope scope = new();
+            _clientState.ServerTickBuffer.Slice(TickSource.Server, 0, 5).Select(tick => tick?.TickNumber)
+                .Should().Equal(10, null, null, null, null);
+            _clientState.ServerTickBuffer.Slice(TickSource.East, 0, 5).Select(tick => tick?.TickNumber)
+                .Should().Equal(null, null, null, 8, null);
+            _clientState.ServerTickBuffer.Slice(TickSource.South, 0, 5).Select(tick => tick?.TickNumber)
+                .Should().Equal(10, null, null, null, null);
+            _clientState.ServerTickBuffer.Slice(TickSource.West, 0, 5).Select(tick => tick?.TickNumber)
+                .Should().Equal(10, null, null, null, null);
+            _clientState.ServerTickBuffer.Slice(TickSource.North, 0, 5).Select(tick => tick?.TickNumber)
+                .Should().Equal(null, 11, null, null, null);
+        }
+
+        [Fact]
+        public void ReceiveMessageShouldNotAddAlreadyAckedTicks()
+        {
+            // Arrange
+            _clientState.AckTicks[TickSource.Server] = 10;
+            _clientState.AckTicks[TickSource.East] = 8;
+            _clientState.AckTicks[TickSource.South] = 10;
+            _clientState.AckTicks[TickSource.West] = 10;
+            _clientState.AckTicks[TickSource.North] = 11;
+            ServerGameTickMessage message = new()
+            {
+                Ticks = new List<ServerGameTick>
+                {
+                    new() { Player = TickSource.Server, TickNumber = 10 },
+                    new() { Player = TickSource.East, TickNumber = 8 },
+                    new() { Player = TickSource.South, TickNumber = 10 },
+                    new() { Player = TickSource.West, TickNumber = 10 },
+                    new() { Player = TickSource.North, TickNumber = 11 },
+                },
+            };
+
+            // Act
+            _tickService.ReceiveMessage(message);
+
+            // Assert
+            using AssertionScope scope = new();
+            foreach (TickSource source in (TickSource[]) Enum.GetValues(typeof(TickSource)))
+            {
+                _clientState.ServerTickBuffer.Slice(source, 0, 5).Select(tick => tick?.TickNumber).Should().Equal(null, null, null, null, null);
+            }
         }
 
         [Fact]
